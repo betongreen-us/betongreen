@@ -642,6 +642,9 @@ main h1 #hbtn{display:none!important}
 
 /* Selector de flujo */
 #bogModes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
+#bogBack{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:25;display:none;align-items:center;gap:8px;margin:0 0 12px;padding:9px 16px 9px 10px;border-radius:24px;border:1px solid var(--bog-green);background:rgba(5,10,7,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--bog-green);font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 16px rgba(47,227,111,.25)}
+#bogBack svg{width:20px;height:20px;flex:none}
+main.m-gato #bogBack,main.m-liga #bogBack{display:inline-flex}
 .bm{position:relative;text-align:left;display:flex;flex-direction:column;gap:6px;padding:12px 12px 13px;border-radius:16px;border:1px solid var(--bog-line);background:linear-gradient(180deg,var(--bog-surface2),var(--bog-surface));color:var(--t);cursor:pointer;min-width:0}
 .bm svg{width:24px;height:24px;color:var(--bog-mute)}
 .bm b{font-family:var(--f-display);font-weight:400;font-size:17px;line-height:1.05;letter-spacing:.3px;color:var(--bog-ink);text-transform:uppercase}
@@ -884,7 +887,7 @@ const B={es:{
   myNote:"Son los picks que el gato te eligió a ti en este teléfono. Se marcan solos cuando terminan los partidos.",recWk:"últimos 7 días",recAll:"Ver historial completo",sDevP:"Solo para ti mientras pruebas: estado de los datos y simulación de la prueba gratis. Los clientes no las ven.",offD:"Ocultas",
   today:"Hoy",tomorrow:"Mañana",
   inWheel:n=>`En la ruleta hoy · ${n} partidos`,inWheelP:"Solo entran partidos con al menos una línea por encima del 60%. El porcentaje es la mejor línea de cada partido.",
-  pickH:"Elige tu liga",pickP:"Después el gato gira la ruleta y elige el partido.",nMatches:n=>`${n} partido${n===1?"":"s"} con datos`,noMatches:"Sin partidos ahora"},
+  pickH:"Elige tu liga",bkGato:"Volver · elegir yo la liga",bkLiga:"Cambiar de liga",pickP:"Después el gato gira la ruleta y elige el partido.",nMatches:n=>`${n} partido${n===1?"":"s"} con datos`,noMatches:"Sin partidos ahora"},
 en:{
   nHome:"Home",nCombo:"Parlay",nHist:"Record",nSet:"Settings",
   m1:"Pick your <em>league</em>",m1s:"You pick the league, the cat picks the match",
@@ -919,7 +922,7 @@ en:{
   myNote:"These are the picks the cat made for you on this phone. They settle on their own when the matches end.",recWk:"last 7 days",recAll:"See full record",sDevP:"Only for you while testing: data status and free-trial simulation. Customers don't see them.",offD:"Hidden",
   today:"Today",tomorrow:"Tomorrow",
   inWheel:n=>`On the wheel today · ${n} matches`,inWheelP:"Only matches with at least one line above 60% get in. The percentage is each match's best line.",
-  pickH:"Pick your league",pickP:"Then the cat spins the wheel and picks the match.",nMatches:n=>`${n} match${n===1?"":"es"} with data`,noMatches:"No matches right now"}};
+  pickH:"Pick your league",bkGato:"Back · pick the league myself",bkLiga:"Change league",pickP:"Then the cat spins the wheel and picks the match.",nMatches:n=>`${n} match${n===1?"":"es"} with data`,noMatches:"No matches right now"}};
 const L=()=>B[lang]||B.es;
 const LS={g:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1177,8 +1180,12 @@ function drawPicker(){const l=L();
   picker.querySelectorAll(".lp-c").forEach(b=>b.onclick=()=>chooseLeague(b.dataset.k))}
 function chooseLeague(k){const chip=document.querySelector(`#ligas .chip[data-l="${k}"]`);if(chip)chip.click();PICKING=false;applyView();
   try{meow()}catch(e){}setTimeout(()=>{try{$("ligas").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},60)}
-function applyView(){main.classList.toggle("m-gato",MODE==="gato");main.classList.toggle("m-pick",MODE==="liga"&&PICKING);if(MODE==="liga"&&PICKING)drawPicker()}
+function applyView(){main.classList.toggle("m-gato",MODE==="gato");main.classList.toggle("m-liga",MODE==="liga"&&!PICKING);drawBack();main.classList.toggle("m-pick",MODE==="liga"&&PICKING);if(MODE==="liga"&&PICKING)drawPicker()}
 const fav=document.createElement("div");fav.id="bogFav";modes.after(fav);
+/* flecha para regresar: desde "El gato elige por ti" o desde una liga ya elegida, vuelve a la lista de ligas */
+const back=document.createElement("button");back.id="bogBack";back.type="button";modes.before(back);
+function drawBack(){back.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>${MODE==="gato"?L().bkGato:L().bkLiga}</span>`;back.setAttribute("aria-label",MODE==="gato"?L().bkGato:L().bkLiga)}
+back.onclick=()=>{if(SPIN)return;setMode("liga");try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}};
 function drawFav(){const l=L();fav.innerHTML=`<span class="fv-l">${l.favL}</span>${Object.keys(FG).map(k=>`<button class="fv${FAV.includes(k)?" on":""}" data-f="${k}" aria-pressed="${FAV.includes(k)}">${l["fg_"+k]}</button>`).join("")}`;
   fav.querySelectorAll(".fv").forEach(b=>b.onclick=()=>{const k=b.dataset.f;if(FAV.includes(k)){if(FAV.length===1)return;FAV=FAV.filter(x=>x!==k)}else FAV.push(k);LS.s("bog_fav",JSON.stringify(FAV));
     clearPick();clearGlow();drawFav();render();if(MODE==="gato")drawPool(false)})}
@@ -1214,7 +1221,7 @@ function setMode(m){MODE=m;LS.s("bog_mode",m);if(m==="liga")PICKING=true;applyVi
 /* ---------- cabecera e idioma ---------- */
 const h1=document.querySelector("main h1");
 if(h1){const hb=$("hbtn");h1.classList.add("bog-h");h1.innerHTML="<span>BET ON <b>GREEN</b></span>";if(hb)h1.appendChild(hb)}
-function paintStatic(){document.querySelectorAll("[data-b]").forEach(e=>e.textContent=L()[e.dataset.b]);drawModes();drawFav();drawRec();if(MODE==="liga"&&PICKING)drawPicker();if(MODE==="gato")drawPool(true);if(!$("shCombo").hidden)drawCombo();badge()}
+function paintStatic(){document.querySelectorAll("[data-b]").forEach(e=>e.textContent=L()[e.dataset.b]);drawModes();drawBack();drawFav();drawRec();if(MODE==="liga"&&PICKING)drawPicker();if(MODE==="gato")drawPool(true);if(!$("shCombo").hidden)drawCombo();badge()}
 const oApply=applyLang;
 window.applyLang=applyLang=function(){oApply();paintStatic()};
 
