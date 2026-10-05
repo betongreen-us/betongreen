@@ -971,7 +971,8 @@ function jointAll(list){const gr={};list.forEach(x=>{const k=x.lg+"|"+x.dia+"|"+
   return Object.values(gr).reduce((a,xs)=>a*(xs.length>1?jointMatch(findMatch(xs[0].lg,xs[0].dia,xs[0].par),xs):xs[0].p/100),1)}
 /* mejor combinadita de 2 del mismo partido a partir del pick principal */
 function bestDuo(m,p){let best=null;m[2].forEach(q=>{if(q===p||!okMk(q[0]))return;const j=jointMatch(m,[{mk:p[0],sel:p[1],p:p[2]},{mk:q[0],sel:q[1],p:q[2]}]);
-  if(j<.55||j>.97*Math.min(p[2],q[2])/100)return;if(!best||j>best.j)best={q,j}});return best}
+  /* objetivo: dos líneas que juntas den ~58% (≈ -140 a -160 en la casa), no la pareja casi segura que no paga */
+  if(j<.53||j>.66||j>.97*Math.min(p[2],q[2])/100)return;const s=Math.abs(j-.58);if(!best||s<best.s)best={q,j,s}});return best}
 
 /* ---------- Mis mercados favoritos ---------- */
 const FG={gt:["g1","g2","g1e","g2e"],ge:["ge","gp"],bt:["bt"],co:["ce","cp","c1","c2"]};
