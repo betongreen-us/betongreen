@@ -500,7 +500,7 @@ function roar(){
 }
 function purrLevel(){if(PURR&&AC)PURR.master.gain.setTargetAtTime(soundOn?PL:0,AC.currentTime,.15)}
 function introSound(){try{startPurr();if(AC&&AC.state!=="running")AC.resume();const h=document.getElementById("ihint");if(h)h.style.opacity=0}catch(e){}}
-["pointerdown","touchstart","keydown","click"].forEach(ev=>document.addEventListener(ev,()=>{if(document.getElementById("intro"))introSound()},{passive:true}));
+["pointerdown","pointerup","touchstart","touchend","mousedown","keydown","click"].forEach(ev=>{document.addEventListener(ev,()=>{if(document.getElementById("intro"))introSound()},{passive:true,capture:true});window.addEventListener(ev,()=>{if(document.getElementById("intro"))introSound()},{passive:true,capture:true})});/* al volver a la app (desde otra app o la pantalla de inicio) reactivar el ronroneo si el teléfono lo permite */document.addEventListener("visibilitychange",()=>{if(!document.hidden&&document.getElementById("intro")){try{if(AC&&AC.state!=="running")AC.resume()}catch(e){}}});window.addEventListener("pageshow",()=>{if(document.getElementById("intro")){try{startPurr();if(AC&&AC.state!=="running")AC.resume()}catch(e){}}});
 try{startPurr()}catch(e){}
 document.getElementById("isnd").onclick=e=>{e.stopPropagation();document.getElementById("snd").click();document.getElementById("isnd").textContent=soundOn?"🔊":"🔇";purrLevel()};
 document.getElementById("snd").addEventListener("click",()=>setTimeout(purrLevel,0));
