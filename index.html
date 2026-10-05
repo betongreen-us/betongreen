@@ -18,6 +18,9 @@ h1{color:var(--g);margin:0;font-size:28px}
 .stage{position:relative;width:100%;max-width:340px;margin:0 auto;border-radius:18px;overflow:hidden;background:#000;cursor:pointer;aspect-ratio:640/768;box-shadow:0 0 28px rgba(34,197,94,.25)}
 .stage #catstill,.stage #catcv{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
 .stage .catin{position:absolute;inset:0}
+main.m-gato #bogPool #stage{display:block!important}
+#bogPool #stage .go{display:none}
+.wheelbox.catbox{aspect-ratio:auto;max-width:340px}
 .go{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--g);color:#000;font-weight:800;border:0;border-radius:24px;padding:10px 20px;font-size:15px}
 .stage #glow{position:absolute;inset:0;pointer-events:none}
 .gl{position:absolute;width:13%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);border:3px solid #86efac;background:radial-gradient(circle,rgba(134,239,172,.55) 0%,rgba(34,197,94,.25) 55%,transparent 72%);box-shadow:0 0 14px 6px #22c55e,0 0 34px 14px rgba(34,197,94,.7);animation:glp 1s ease-in-out infinite alternate}
@@ -407,7 +410,7 @@ $("stage").onclick=()=>{
   if(liga!=="laliga"&&!Object.keys(D).length){$("pick").innerHTML=`<div class="pick"><small>${t("study_s")}</small><b>${LN[liga]}</b>${t("study_p")}</div>`;try{meow()}catch(e){}$("pick").scrollIntoView({behavior:"smooth",block:"center"});return}
   if($("stage").classList.contains("play"))return;
   clearPick();clearGlow();$("stage").classList.add("play");
-  meow();startSpin(5);
+  startSpin(5);
   const fin=()=>{stopSpin();$("stage").classList.remove("play");elegir();try{meow()}catch(e){}};
   if(window.CAT&&window.CAT.ok)window.CAT.spin(5,fin);else setTimeout(fin,1500);
 };
@@ -1177,7 +1180,7 @@ function drawPicker(){const l=L();
     return `<button class="lp-c${n?"":" off"}" data-k="${k}"><span class="lp-f">${FLAG[k]}</span><b>${esc(LN[k])}</b><small>${n?l.nMatches(n):l.noMatches}</small></button>`}).join("")}</div><p class="note" style="text-align:center">${l.pickP}</p>`;
   picker.querySelectorAll(".lp-c").forEach(b=>b.onclick=()=>chooseLeague(b.dataset.k))}
 function chooseLeague(k){const chip=document.querySelector(`#ligas .chip[data-l="${k}"]`);if(chip)chip.click();PICKING=false;applyView();
-  try{meow()}catch(e){}setTimeout(()=>{try{$("ligas").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},60)}
+  setTimeout(()=>{try{$("ligas").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},60)}
 function applyView(){main.classList.toggle("m-gato",MODE==="gato");main.classList.toggle("m-liga",MODE==="liga"&&!PICKING);drawBack();main.classList.toggle("m-pick",MODE==="liga"&&PICKING);if(MODE==="liga"&&PICKING)drawPicker()}
 const fav=document.createElement("div");fav.id="bogFav";modes.after(fav);
 /* flecha para regresar: desde "El gato elige por ti" o desde una liga ya elegida, vuelve a la lista de ligas */
@@ -1261,11 +1264,11 @@ window.showWheel=showWheel=function(){oShowW();const on=liga==="laliga";if(on)$(
     spin(dur,cb){const t=performance.now()/1000;S.spin={from:S.rot,to:S.rot+1080,t0:t,dur:reduce?.4:dur,cb}},
     mouth(d){S.mouth={t0:performance.now()/1000+.02,d:d||.9}}};
   /* el maullido abre un poquito la boca */
-  if(typeof meow==="function"){const m0=meow;meow=function(){try{if(soundOn)CAT.mouth(.9);else CAT.mouth(.75)}catch(e){}return m0.apply(this,arguments)}}
+  if(typeof meow==="function"){const m0=meow;let lastM=-1e9;meow=function(){const n=performance.now();if(n-lastM<2500)return;lastM=n;try{CAT.mouth(soundOn?.9:.75)}catch(e){}return m0.apply(this,arguments)}}
   let gl=null;try{gl=cv.getContext("webgl",{premultipliedAlpha:false,antialias:false})}catch(e){}
   if(!gl){cv.style.display="none";return}
   const VS=`attribute vec2 a;varying vec2 v;void main(){v=vec2(a.x*.5+.5,.5-a.y*.5);gl_Position=vec4(a,0.,1.);}`;
-  const FS=`precision highp float;varying vec2 v;uniform sampler2D P,Wt,M;uniform float hA,eL,eR,tA,bl,rot,lx,ly,jw;
+  const FS=`precision highp float;varying vec2 v;uniform sampler2D P,Wt,M;uniform float hA,eL,eR,tA,bl,rot,lx,ly,jw,hD;
 const vec2 S=vec2(1145.,1374.);
 vec2 ra(vec2 p,vec2 c,float a){float s=sin(a),k=cos(a);vec2 d=p-c;return c+vec2(k*d.x-s*d.y,s*d.x+k*d.y);}
 vec4 tx(vec2 q){return texture2D(P,clamp(q/S,0.,1.));}
@@ -1276,7 +1279,7 @@ vec4 eye(vec2 q,vec2 c,vec2 r,vec4 col){vec2 u=(q-c)/r;float e=length(u);
   vec4 fur=tx(vec2(q.x,c.y-r.y*1.18-10.+(ul.y+1.)*.3*r.y));fur.rgb*=mix(1.,.5,smoothstep(edge-.22,edge,ul.y));
   return mix(col,fur,lid);}
 void main(){vec2 p=v*S,q=p;
-  float w=1.-smoothstep(.72,1.,length((p-vec2(585.,230.))/vec2(340.,300.)));q=mix(q,ra(q,vec2(585.,560.),-hA),w);
+  float w=1.-smoothstep(.72,1.,length((p-vec2(585.,230.))/vec2(340.,300.)));q=mix(q,ra(q,vec2(585.,560.),-hA),w);q.y-=hD*15.*w;q.y=mix(q.y,560.+(q.y-560.)*(1.+.045*hD),w);
   vec2 d=p-vec2(448.,108.);w=exp(-dot(d,d)/7200.)*(1.-smoothstep(175.,220.,p.y));q=mix(q,ra(q,vec2(468.,198.),-eL),w);
   d=p-vec2(786.,140.);w=exp(-dot(d,d)/7200.)*(1.-smoothstep(195.,240.,p.y));q=mix(q,ra(q,vec2(758.,212.),-eR),w);
   w=(1.-smoothstep(.7,1.,length((p-vec2(1010.,1128.))/vec2(150.,100.))))*smoothstep(910.,1095.,p.x);q=mix(q,ra(q,vec2(912.,1150.),-tA),w);
@@ -1304,12 +1307,12 @@ void main(){vec2 p=v*S,q=p;
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im)});
     gl.uniform1i(gl.getUniformLocation(pr,"P"),0);gl.uniform1i(gl.getUniformLocation(pr,"Wt"),1);gl.uniform1i(gl.getUniformLocation(pr,"M"),2);
-    ["hA","eL","eR","tA","bl","rot","lx","ly","jw"].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+    ["hA","eL","eR","tA","bl","rot","lx","ly","jw","hD"].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
     gl.viewport(0,0,cv.width,cv.height);CAT.ok=true;draw({});still.style.visibility="hidden";requestAnimationFrame(frame)
   }).catch(()=>{cv.style.display="none"});
   const rnd=(a,b)=>a+Math.random()*(b-a),sm=(a,b,v)=>{v=Math.min(1,Math.max(0,(v-a)/(b-a)));return v*v*(3-2*v)};
   function draw(o){gl.uniform1f(U.hA,o.hA||0);gl.uniform1f(U.eL,o.eL||0);gl.uniform1f(U.eR,o.eR||0);gl.uniform1f(U.tA,o.tA||0);gl.uniform1f(U.bl,o.bl||0);
-    gl.uniform1f(U.rot,S.rot*D);gl.uniform1f(U.lx,0);gl.uniform1f(U.ly,0);gl.uniform1f(U.jw,o.jw||0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.uniform1f(U.rot,S.rot*D);gl.uniform1f(U.lx,0);gl.uniform1f(U.ly,o.ly||0);gl.uniform1f(U.jw,o.jw||0);gl.uniform1f(U.hD,o.hD||0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     ROT.setAttribute("transform",`rotate(${S.rot} ${CX} ${CY})`)}
   function frame(ms){requestAnimationFrame(frame);
     const t=ms/1000,vis=stage.offsetParent!==null;
@@ -1325,10 +1328,39 @@ void main(){vec2 p=v*S,q=p;
     if(t>S.flickAt){S.flickT=t;S.flickAt=t+rnd(4,8)}
     const fx=(t-S.flickT)/0.9,fl=fx>=0&&fx<=1?Math.sin(Math.PI*fx*3)*(1-fx):0,tA=(Math.sin(t*1.6)*2.2+fl*7)*D;
     let hA=Math.sin(t*.55)*1.1*D+Math.sin(t*1.3)*.35*D;
-    if(S.spin){const p=Math.min(1,(t-S.spin.t0)/S.spin.dur);hA+=Math.sin(t*4.5)*1.6*D*(1-p)}
+    let hD=0;if(S.spin){const p=Math.min(1,(t-S.spin.t0)/S.spin.dur);hA+=Math.sin(t*4.5)*.8*D*(1-p);hD=sm(.04,.18,p)*(1-sm(.72,.93,p))}
     if(S.tilt!==null){const k=t-S.tilt,a=k<.35?k/.35:k<1.6?1:k<2.1?1-(k-1.6)/.5:0;hA+=a*6*D;if(k>2.1)S.tilt=null}
     let jw=0;if(S.mouth){const x=(performance.now()/1000-S.mouth.t0)/S.mouth.d;if(x>=0&&x<=1)jw=sm(0,.14,x)*(1-sm(.68,1,x))*(.82+.18*Math.sin(x*14));else if(x>1)S.mouth=null}
-    draw({hA,eL,eR,tA,bl,jw})}
+    draw({hA,eL,eR,tA,bl,jw,hD,ly:3*hD})}
+
+  /* ---- "El gato elige por ti": el mismo gato con la ruleta de los partidos candidatos ---- */
+  const mark=document.createComment("stage");stage.parentNode.insertBefore(mark,stage);
+  const stageHome=()=>{if(stage.previousSibling!==mark)mark.parentNode.insertBefore(stage,mark.nextSibling)};
+  function poolRing(){const old=$("whPool");if(old)old.remove();if(!CANDS.length)return;
+    const N=CANDS.length,off=Math.floor(Math.random()*N);let h='<g id="whPool">';
+    CANDS.forEach((x,i)=>{const a=((i+off)%N)*360/N*Math.PI/180,sx=Math.sin(a),sy=-Math.cos(a);
+      [[x.m[0],280,54],[x.m[1],200,48]].forEach(([tm,r,sz])=>{const px=CX+sx*r,py=CY+sy*r;
+        h+=`<g class="cr" data-i="${i}"><g class="hotg"><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${sz/2+11}" fill="#22c55e" fill-opacity=".35" stroke="#86efac" stroke-width="5"/></g><g class="pl">${crestSVG(x.k,tm,px,py,sz)}</g></g>`})});
+    ROT.insertAdjacentHTML("beforeend",h+"</g>")}
+  function rings(){const g=MODE==="gato";["wh","wh2","wh3","wh4","wh5"].forEach(id=>{const e=$(id);if(e&&g)e.style.display="none"});
+    const p=$("whPool");if(p)p.style.display=g?"":"none";if(!g){W.classList.remove("wpick");showWheel()}}
+  function spinCat(){if(SPIN||!CANDS.length)return;SPIN=true;const go=$("pwGo");if(go)go.disabled=true;$("poolPick").innerHTML="";
+    W.classList.remove("wpick");W.querySelectorAll("#whPool .cr.hot").forEach(e=>e.classList.remove("hot"));
+    try{startSpin(4.6)}catch(e){}
+    const done=()=>{SPIN=false;try{stopSpin();chime()}catch(e){}const x=CANDS[0];
+      W.querySelectorAll('#whPool .cr[data-i="0"]').forEach(e=>e.classList.add("hot"));W.classList.add("wpick");
+      saveMine(x.k,x.d,x.m,x.b);$("poolPick").innerHTML=pickCard(x.k,x.d,x.m,x.b)+othersCard(x.k,x.d,x.m,x.b);
+      const g2=$("pwGo");if(g2){g2.disabled=false;g2.textContent=L().poolAgain}syncAdds();try{meow()}catch(e){}
+      try{$("poolPick").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}};
+    if(CAT.ok)CAT.spin(4.6,done);else setTimeout(done,1200)}
+  const oDrawPool=drawPool;
+  drawPool=function(keepPick){stageHome();oDrawPool(keepPick);const box=$("pwBox");
+    if(box){box.onclick=null;box.innerHTML="";box.classList.add("catbox");box.appendChild(stage)}
+    const go=$("pwGo");if(go)go.onclick=spinCat;poolRing();rings()};
+  const oApplyView=applyView;
+  applyView=function(){oApplyView();if(MODE!=="gato")stageHome();rings()};
+  stage.addEventListener("click",e=>{if(MODE==="gato"){e.stopImmediatePropagation();e.preventDefault();spinCat()}},true);
+  if(MODE==="gato")drawPool(true);
 })();
 const oGlow=glow;
 window.glow=glow=function(m){if(liga!=="laliga")return oGlow(m);clearGlow();const tt=[keyL(m[0]),keyL(m[1])];let n=0;
