@@ -1279,7 +1279,7 @@ vec4 eye(vec2 q,vec2 c,vec2 r,vec4 col){vec2 u=(q-c)/r;float e=length(u);
   vec4 fur=tx(vec2(q.x,c.y-r.y*1.18-10.+(ul.y+1.)*.3*r.y));fur.rgb*=mix(1.,.5,smoothstep(edge-.22,edge,ul.y));
   return mix(col,fur,lid);}
 void main(){vec2 p=v*S,q=p;
-  float w=1.-smoothstep(.72,1.,length((p-vec2(585.,230.))/vec2(340.,300.)));q=mix(q,ra(q,vec2(585.,560.),-hA),w);q.y-=hD*15.*w;q.y=mix(q.y,560.+(q.y-560.)*(1.+.045*hD),w);
+  float w=1.-smoothstep(.72,1.,length((p-vec2(585.,230.))/vec2(340.,300.)));q=mix(q,ra(q,vec2(585.,560.),-hA),w);q.y-=hD*16.*w;q.y=mix(q.y,560.+(q.y-560.)*(1.+.035*hD),w);
   vec2 d=p-vec2(448.,108.);w=exp(-dot(d,d)/7200.)*(1.-smoothstep(175.,220.,p.y));q=mix(q,ra(q,vec2(468.,198.),-eL),w);
   d=p-vec2(786.,140.);w=exp(-dot(d,d)/7200.)*(1.-smoothstep(195.,240.,p.y));q=mix(q,ra(q,vec2(758.,212.),-eR),w);
   w=(1.-smoothstep(.7,1.,length((p-vec2(1010.,1128.))/vec2(150.,100.))))*smoothstep(910.,1095.,p.x);q=mix(q,ra(q,vec2(912.,1150.),-tA),w);
@@ -1312,7 +1312,7 @@ void main(){vec2 p=v*S,q=p;
   }).catch(()=>{cv.style.display="none"});
   const rnd=(a,b)=>a+Math.random()*(b-a),sm=(a,b,v)=>{v=Math.min(1,Math.max(0,(v-a)/(b-a)));return v*v*(3-2*v)};
   function draw(o){gl.uniform1f(U.hA,o.hA||0);gl.uniform1f(U.eL,o.eL||0);gl.uniform1f(U.eR,o.eR||0);gl.uniform1f(U.tA,o.tA||0);gl.uniform1f(U.bl,o.bl||0);
-    gl.uniform1f(U.rot,S.rot*D);gl.uniform1f(U.lx,0);gl.uniform1f(U.ly,o.ly||0);gl.uniform1f(U.jw,o.jw||0);gl.uniform1f(U.hD,o.hD||0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.uniform1f(U.rot,S.rot*D);gl.uniform1f(U.lx,o.lx||0);gl.uniform1f(U.ly,o.ly||0);gl.uniform1f(U.jw,o.jw||0);gl.uniform1f(U.hD,o.hD||0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     ROT.setAttribute("transform",`rotate(${S.rot} ${CX} ${CY})`)}
   function frame(ms){requestAnimationFrame(frame);
     const t=ms/1000,vis=stage.offsetParent!==null;
@@ -1328,10 +1328,10 @@ void main(){vec2 p=v*S,q=p;
     if(t>S.flickAt){S.flickT=t;S.flickAt=t+rnd(4,8)}
     const fx=(t-S.flickT)/0.9,fl=fx>=0&&fx<=1?Math.sin(Math.PI*fx*3)*(1-fx):0,tA=(Math.sin(t*1.6)*2.2+fl*7)*D;
     let hA=Math.sin(t*.55)*1.1*D+Math.sin(t*1.3)*.35*D;
-    let hD=0;if(S.spin){const p=Math.min(1,(t-S.spin.t0)/S.spin.dur);hA+=Math.sin(t*4.5)*.8*D*(1-p);hD=sm(.04,.18,p)*(1-sm(.72,.93,p))}
-    if(S.tilt!==null){const k=t-S.tilt,a=k<.35?k/.35:k<1.6?1:k<2.1?1-(k-1.6)/.5:0;hA+=a*6*D;if(k>2.1)S.tilt=null}
+    let hD=0,lx=0,ly=0;if(S.spin){const p=Math.min(1,(t-S.spin.t0)/S.spin.dur);hD=sm(.02,.27,p)*(1-sm(.68,.96,p));const sw=Math.sin(S.rot*D*.5);hA+=sw*1.2*D*hD;lx=sw*4*hD;ly=6*hD}
+    if(S.tilt!==null){const k=t-S.tilt,a=k<.35?k/.35:k<1.6?1:k<2.1?1-(k-1.6)/.5:0,u=sm(0,.6,k)*(1-sm(1.4,2.3,k));hA+=a*6*D;hD-=.12*u;ly-=3*u;if(k>2.3)S.tilt=null}
     let jw=0;if(S.mouth){const x=(performance.now()/1000-S.mouth.t0)/S.mouth.d;if(x>=0&&x<=1)jw=sm(0,.14,x)*(1-sm(.68,1,x))*(.82+.18*Math.sin(x*14));else if(x>1)S.mouth=null}
-    draw({hA,eL,eR,tA,bl,jw,hD,ly:3*hD})}
+    draw({hA,eL,eR,tA,bl:Math.max(bl,.18*Math.max(0,hD)),jw,hD,lx,ly})}
 
   /* ---- "El gato elige por ti": el mismo gato con la ruleta de los partidos candidatos ---- */
   const mark=document.createComment("stage");stage.parentNode.insertBefore(mark,stage);
