@@ -636,11 +636,14 @@ $("lng").addEventListener("click",()=>setTimeout(draw,50));
 <script>
 /* ---------- Patrones detectados: rachas de los últimos 10 partidos de cada equipo ---------- */
 (function(){
-const HIST={mls:"MLS",ligamx:"Liga MX"};
-/* después de una racha de 7, 8 o 9-10 de 10, cuántas veces se cumplió en el siguiente partido (MLS + Liga MX, 2024-2026) */
-const CAL={g2:[59,56,62],g1:[49,56,59],m2:[48,53,56],r2:[51,48,44],bt:[62,63,61],o25:[60,59,64]};
-const TXT={es:{h:"Patrones detectados",s:"Últimos 10 partidos",g2:"marcó en el 2.º tiempo",g1:"marcó en el 1.er tiempo",m2:"marcó 2 goles o más",r2:"le marcaron 2 goles o más",bt:t=>`En los partidos de ${t}, ambos equipos marcaron`,o25:t=>`En los partidos de ${t}, hubo 3 goles o más`,nx:p=>`Después de rachas así, se cumplió <em>${p}%</em> de las veces`,f:"Una racha no es una probabilidad. Úsala como referencia junto con el % del modelo.",none:"No hay rachas fuertes (7 de 10 o más) en este partido.",load:"Buscando patrones…"},
- en:{h:"Patterns detected",s:"Last 10 matches",g2:"scored in the 2nd half",g1:"scored in the 1st half",m2:"scored 2+ goals",r2:"conceded 2+ goals",bt:t=>`In ${t}'s matches, both teams scored`,o25:t=>`In ${t}'s matches, there were 3+ goals`,nx:p=>`After streaks like this, it hit <em>${p}%</em> of the time`,f:"A streak is not a probability. Use it as a reference next to the model's %.",none:"No strong streaks (7 of 10 or more) in this match.",load:"Looking for patterns…"}};
+const HIST={mls:"MLS",ligamx:"Liga MX",laliga:"La Liga",premier:"Premier League",bundesliga:"Bundesliga"};
+/* después de una racha de 7, 8 o 9-10 de 10, cuántas veces se cumplió en el siguiente partido (historial MLS + Liga MX 2024-2026) */
+const CAL_AM={g2:[59,56,62],g1:[49,56,59],m2:[48,53,56],r2:[51,48,44],bt:[62,63,61],o25:[60,59,64]};
+/* Europa (La Liga, Premier, Bundesliga 2025-2026); donde había menos de 50 casos se usa el historial de todas las ligas */
+const CAL_EU={g2:[60,59,71],g1:[56,55,59],m2:[50,53,65],r2:[59,47,43],bt:[59,58,62],o25:[58,57,66]};
+const CAL=lg=>(lg==="mls"||lg==="ligamx")?CAL_AM:CAL_EU;
+const TXT={es:{h:"Patrones detectados",s:"Últimos 10 partidos",g2:"marcó en el 2.º tiempo",g1:"marcó en el 1.er tiempo",m2:"marcó 2 goles o más",r2:t=>`A ${t} le marcaron 2 goles o más`,bt:t=>`En los partidos de ${t}, ambos equipos marcaron`,o25:t=>`En los partidos de ${t}, hubo 3 goles o más`,nx:p=>`Después de rachas así, se cumplió <em>${p}%</em> de las veces`,f:"Una racha no es una probabilidad. Úsala como referencia junto con el % del modelo.",none:"No hay rachas fuertes (7 de 10 o más) en este partido.",load:"Buscando patrones…"},
+ en:{h:"Patterns detected",s:"Last 10 matches",g2:"scored in the 2nd half",g1:"scored in the 1st half",m2:"scored 2+ goals",r2:t=>`${t} conceded 2+ goals`,bt:t=>`In ${t}'s matches, both teams scored`,o25:t=>`In ${t}'s matches, there were 3+ goals`,nx:p=>`After streaks like this, it hit <em>${p}%</em> of the time`,f:"A streak is not a probability. Use it as a reference next to the model's %.",none:"No strong streaks (7 of 10 or more) in this match.",load:"Looking for patterns…"}};
 const T=()=>TXT[(typeof lang!=="undefined"&&lang==="en")?"en":"es"];
 const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const CACHE={};
@@ -663,7 +666,7 @@ async function fill(el){el.dataset.done="1";let lg,a,b;try{[lg,a,b]=JSON.parse(e
         if(k==="bt"||k==="o25"){/* línea del partido: mostrarla una sola vez, con el equipo de la racha más larga */ if(seen[k]&&seen[k].n>=n)return;if(seen[k])items.splice(items.indexOf(seen[k]),1)}
         const it={tm,k,n,d:s[k].slice().reverse()};if(k==="bt"||k==="o25")seen[k]=it;items.push(it)})});
     items.sort((x,y)=>y.n-x.n);const top=items.slice(0,4);
-    el.innerHTML=`<div class="pat-h"><span>🐾 ${t.h}</span><small>${t.s}</small></div>`+(top.length?top.map(x=>`<div class="pat-r"><div class="pat-t"><span>${(x.k==="bt"||x.k==="o25")?t[x.k](e(x.tm)):`${e(x.tm)} ${t[x.k]}`}</span><b>${x.n}/10</b></div><div class="pat-d">${x.d.map(v=>`<i class="${v?"y":""}"></i>`).join("")}</div><div class="pat-n">${t.nx(CAL[x.k][Math.min(x.n,9)-7])}</div></div>`).join("")+`<p class="pat-f">${t.f}</p>`:`<div class="pat-e">${t.none}</div>`);
+    el.innerHTML=`<div class="pat-h"><span>🐾 ${t.h}</span><small>${t.s}</small></div>`+(top.length?top.map(x=>`<div class="pat-r"><div class="pat-t"><span>${typeof t[x.k]==="function"?t[x.k](e(x.tm)):`${e(x.tm)} ${t[x.k]}`}</span><b>${x.n}/10</b></div><div class="pat-d">${x.d.map(v=>`<i class="${v?"y":""}"></i>`).join("")}</div><div class="pat-n">${t.nx(CAL(lg)[x.k][Math.min(x.n,9)-7])}</div></div>`).join("")+`<p class="pat-f">${t.f}</p>`:`<div class="pat-e">${t.none}</div>`);
   }catch(_){el.hidden=true}}
 function scan(){document.querySelectorAll(".pat[data-pat]:not([data-done])").forEach(fill)}
 new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
