@@ -614,6 +614,61 @@ $("lng").addEventListener("click",()=>setTimeout(draw,50));
 </body></html>
 
 <script>(function(){var b=document.getElementById("hbtn"),h=document.querySelector("main h1");if(b&&h)h.appendChild(b)})();</script>
+<style>
+.pat{margin-top:14px;padding:12px;border-radius:14px;border:1px solid var(--bog-line-hi);background:rgba(5,10,7,.55)}
+.pat[hidden]{display:none}
+.pat-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px}
+.pat-h span{font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bog-green-soft)}
+.pat-h small{font-size:11px;color:var(--bog-mute)}
+.pat-r{padding:9px 0;border-top:1px solid rgba(255,255,255,.06)}
+.pat-r:first-of-type{border-top:0}
+.pat-t{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--bog-ink)}
+.pat-t span{min-width:0}
+.pat-t b{flex:none;font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--bog-green);font-variant-numeric:tabular-nums}
+.pat-d{display:flex;gap:3px;margin:6px 0 4px}
+.pat-d i{flex:1;height:6px;border-radius:3px;background:#1f2937}
+.pat-d i.y{background:var(--bog-green);box-shadow:0 0 6px rgba(47,227,111,.45)}
+.pat-n{font-size:12px;color:var(--bog-mute);line-height:1.35}
+.pat-n em{font-style:normal;color:var(--bog-green-soft);font-weight:700}
+.pat-f{margin:8px 0 0;font-size:11.5px;line-height:1.4;color:var(--bog-mute)}
+.pat-e{font-size:12.5px;color:var(--bog-mute);padding:4px 0}
+</style>
+<script>
+/* ---------- Patrones detectados: rachas de los últimos 10 partidos de cada equipo ---------- */
+(function(){
+const HIST={mls:"MLS",ligamx:"Liga MX"};
+/* después de una racha de 7, 8 o 9-10 de 10, cuántas veces se cumplió en el siguiente partido (MLS + Liga MX, 2024-2026) */
+const CAL={g2:[59,56,62],g1:[49,56,59],m2:[48,53,56],r2:[51,48,44],bt:[62,63,61],o25:[60,59,64]};
+const TXT={es:{h:"Patrones detectados",s:"Últimos 10 partidos",g2:"marcó en el 2.º tiempo",g1:"marcó en el 1.er tiempo",m2:"marcó 2 goles o más",r2:"le marcaron 2 goles o más",bt:t=>`En los partidos de ${t}, ambos equipos marcaron`,o25:t=>`En los partidos de ${t}, hubo 3 goles o más`,nx:p=>`Después de rachas así, se cumplió <em>${p}%</em> de las veces`,f:"Una racha no es una probabilidad. Úsala como referencia junto con el % del modelo.",none:"No hay rachas fuertes (7 de 10 o más) en este partido.",load:"Buscando patrones…"},
+ en:{h:"Patterns detected",s:"Last 10 matches",g2:"scored in the 2nd half",g1:"scored in the 1st half",m2:"scored 2+ goals",r2:"conceded 2+ goals",bt:t=>`In ${t}'s matches, both teams scored`,o25:t=>`In ${t}'s matches, there were 3+ goals`,nx:p=>`After streaks like this, it hit <em>${p}%</em> of the time`,f:"A streak is not a probability. Use it as a reference next to the model's %.",none:"No strong streaks (7 of 10 or more) in this match.",load:"Looking for patterns…"}};
+const T=()=>TXT[(typeof lang!=="undefined"&&lang==="en")?"en":"es"];
+const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CACHE={};
+window.patHTML=function(lg,m){if(!HIST[lg])return "";return `<div class="pat" data-pat="${e(JSON.stringify([lg,m[0],m[1]]))}"><div class="pat-e">${T().load}</div></div>`};
+async function last10(lg,team){const key=lg+"|"+team;if(CACHE[key])return CACHE[key];
+  const sel="fecha,local,visitante,goles_local,goles_visitante,goles_local_1t,goles_visitante_1t";
+  const p=(async()=>{try{
+    const u=`${SB}partidos_hist?liga=eq.${encodeURIComponent(HIST[lg])}&or=(local.ilike.${encodeURIComponent('"'+team+'*"')},visitante.ilike.${encodeURIComponent('"'+team+'*"')})&goles_local_1t=not.is.null&order=fecha.desc&limit=10&select=${sel}`;
+    const r=await fetch(u,{headers:{apikey:SK,Authorization:"Bearer "+SK}});if(!r.ok)throw 0;return await r.json()}
+  catch(_){const q=team.replace(/'/g,"''"),lq=HIST[lg].replace(/'/g,"''");
+    return await window.bogSQL(`select ${sel} from partidos_hist where liga='${lq}' and (local ilike '${q}%' or visitante ilike '${q}%') and goles_local_1t is not null order by fecha desc limit 10`)}})();
+  CACHE[key]=p;p.catch(()=>{delete CACHE[key]});return p}
+function streaks(team,rows){const s={g2:[],g1:[],m2:[],r2:[],bt:[],o25:[]};
+  rows.forEach(r=>{const h=r.local===team||String(r.local).startsWith(team+" "),gf=h?r.goles_local:r.goles_visitante,ga=h?r.goles_visitante:r.goles_local,gf1=h?r.goles_local_1t:r.goles_visitante_1t;
+    s.g2.push(gf-gf1>0);s.g1.push(gf1>0);s.m2.push(gf>=2);s.r2.push(ga>=2);s.bt.push(gf>0&&ga>0);s.o25.push(gf+ga>=3)});return s}
+async function fill(el){el.dataset.done="1";let lg,a,b;try{[lg,a,b]=JSON.parse(el.dataset.pat)}catch(_){el.hidden=true;return}
+  try{const [ra,rb]=await Promise.all([last10(lg,a),last10(lg,b)]);const t=T(),items=[],seen={};
+    [[a,ra],[b,rb]].forEach(([tm,rows])=>{if(!rows||rows.length<10)return;const s=streaks(tm,rows);
+      Object.keys(s).forEach(k=>{const n=s[k].filter(Boolean).length;if(n<7)return;
+        if(k==="bt"||k==="o25"){/* línea del partido: mostrarla una sola vez, con el equipo de la racha más larga */ if(seen[k]&&seen[k].n>=n)return;if(seen[k])items.splice(items.indexOf(seen[k]),1)}
+        const it={tm,k,n,d:s[k].slice().reverse()};if(k==="bt"||k==="o25")seen[k]=it;items.push(it)})});
+    items.sort((x,y)=>y.n-x.n);const top=items.slice(0,4);
+    el.innerHTML=`<div class="pat-h"><span>🐾 ${t.h}</span><small>${t.s}</small></div>`+(top.length?top.map(x=>`<div class="pat-r"><div class="pat-t"><span>${(x.k==="bt"||x.k==="o25")?t[x.k](e(x.tm)):`${e(x.tm)} ${t[x.k]}`}</span><b>${x.n}/10</b></div><div class="pat-d">${x.d.map(v=>`<i class="${v?"y":""}"></i>`).join("")}</div><div class="pat-n">${t.nx(CAL[x.k][Math.min(x.n,9)-7])}</div></div>`).join("")+`<p class="pat-f">${t.f}</p>`:`<div class="pat-e">${t.none}</div>`);
+  }catch(_){el.hidden=true}}
+function scan(){document.querySelectorAll(".pat[data-pat]:not([data-done])").forEach(fill)}
+new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+})();
+</script>
 </body></html>
 
 <!-- ===== Bet on Green · capa de diseño v2 (flujos, combinada, navegación, ajustes) ===== -->
@@ -1057,7 +1112,7 @@ function pickCard(lg,dia,m,p,extra){const l=L(),[cc,ck]=conf(p[2]),hb=HB[p[0]],i
   <div class="pc-line"><div><small>${esc(MKL()[p[0]]||"")}</small><b>${esc(trSel(p[1]))}</b></div><div class="pc-pct">${p[2]}%<small>${l.estP}</small></div></div>
   <div class="pc-meta"><span class="conf ${cc}">${l[ck]}</span></div>
   ${hb?`<div class="btline">${l.bt(Math.round(hb[1]*100),nf(hb[0]))}</div>`:""}
-  <button class="solid" data-sel="${esc(id)}">${l.add}</button>${duoHTML(lg,dia,m,p,id)}${extra||""}</div>`}
+  <button class="solid" data-sel="${esc(id)}">${l.add}</button>${duoHTML(lg,dia,m,p,id)}${window.patHTML?patHTML(lg,m):""}${extra||""}</div>`}
 function duoHTML(lg,dia,m,p,id){const d=bestDuo(m,p);if(!d)return "";const l=L(),id2=reg(lg,dia,m,d.q);
   return `<div class="duo"><div class="duo-h"><span>${l.duoH}</span><b>${Math.round(d.j*100)}%</b></div>
   <div class="duo-l"><span><small>${esc(MKL()[p[0]]||"")}</small>${esc(trSel(p[1]))}</span><em>${p[2]}%</em></div>
