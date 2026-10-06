@@ -411,7 +411,8 @@ $("stage").onclick=()=>{
   if($("stage").classList.contains("play"))return;
   clearPick();clearGlow();$("stage").classList.add("play");
   startSpin(5);
-  const fin=()=>{stopSpin();$("stage").classList.remove("play");elegir();try{meow()}catch(e){}};
+  const fin=()=>{stopSpin();$("stage").classList.remove("play");const mn=document.querySelector("main");mn.classList.add("revelando");elegir();try{meow()}catch(e){}
+    setTimeout(()=>{mn.classList.remove("revelando");try{$("pick").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},1800)};
   if(window.CAT&&window.CAT.ok)window.CAT.spin(5,fin);else setTimeout(fin,1500);
 };
 if(LIVE[liga]&&liga!=="laliga"){swapData(LIVE[liga]);render()}
@@ -1323,7 +1324,7 @@ window.showWheel=showWheel=function(){oShowW();const on=liga==="laliga";if(on)$(
     spin(dur,cb){const t=performance.now()/1000;S.spin={from:S.rot,to:S.rot+1080,t0:t,dur:reduce?.4:dur,cb}},
     mouth(d){S.mouth={t0:performance.now()/1000+.02,d:d||.9}}};
   /* el maullido abre un poquito la boca */
-  if(typeof meow==="function"){const m0=meow;let lastM=-1e9;meow=function(){const n=performance.now();if(n-lastM<2500)return;lastM=n;try{CAT.mouth(soundOn?.9:.75)}catch(e){}return m0.apply(this,arguments)}}
+  if(typeof meow==="function"){const m0=meow;let lastM=-1e9;meow=function(){const n=performance.now();if(n-lastM<2500)return;lastM=n;try{CAT.mouth(1.3)}catch(e){}return m0.apply(this,arguments)}}
   let gl=null;try{gl=cv.getContext("webgl",{premultipliedAlpha:false,antialias:false})}catch(e){}
   if(!gl){cv.style.display="none";return}
   const VS=`attribute vec2 a;varying vec2 v;void main(){v=vec2(a.x*.5+.5,.5-a.y*.5);gl_Position=vec4(a,0.,1.);}`;
@@ -1343,8 +1344,8 @@ void main(){vec2 p=v*S,q=p;
   d=p-vec2(786.,140.);w=exp(-dot(d,d)/7200.)*(1.-smoothstep(195.,240.,p.y));q=mix(q,ra(q,vec2(758.,212.),-eR),w);
   w=(1.-smoothstep(.7,1.,length((p-vec2(1010.,1128.))/vec2(150.,100.))))*smoothstep(910.,1095.,p.x);q=mix(q,ra(q,vec2(912.,1150.),-tA),w);
   vec2 dm=(q-vec2(570.,458.))/vec2(64.,48.);float wj=(1.-smoothstep(.5,1.,length(dm)))*smoothstep(422.,440.,q.y);
-  vec4 col=tx(q-vec2(0.,jw*7.*wj));
-  vec2 cu=(q-vec2(571.,435.+jw*4.))/vec2(9.+5.*jw,max(jw*7.,.01));cu.x*=1.+.3*max(-cu.y,0.);
+  vec4 col=tx(q-vec2(0.,jw*15.*wj));
+  vec2 cu=(q-vec2(571.,436.+jw*8.))/vec2(10.+9.*jw,max(jw*13.,.01));cu.x*=1.+.3*max(-cu.y,0.);
   float cl=length(cu);float cm=(1.-smoothstep(.6,1.,cl))*smoothstep(.0,.1,jw);
   float tg=smoothstep(.15,.7,cu.y)*(1.-smoothstep(.45,.9,abs(cu.x)));
   vec3 cav=mix(vec3(.035,.01,.015),vec3(.52,.22,.27),tg);
@@ -1406,11 +1407,14 @@ void main(){vec2 p=v*S,q=p;
   function spinCat(){if(SPIN||!CANDS.length)return;SPIN=true;const go=$("pwGo");if(go)go.disabled=true;$("poolPick").innerHTML="";pool.classList.remove("shown");
     W.classList.remove("wpick");W.querySelectorAll("#whPool .cr.hot").forEach(e=>e.classList.remove("hot"));
     try{startSpin(4.6)}catch(e){}
-    const done=()=>{SPIN=false;try{stopSpin();chime()}catch(e){}const x=CANDS[0];
-      W.querySelectorAll('#whPool .cr[data-i="0"]').forEach(e=>e.classList.add("hot"));W.classList.add("wpick");
-      saveMine(x.k,x.d,x.m,x.b);$("poolPick").innerHTML=pickCard(x.k,x.d,x.m,x.b)+othersCard(x.k,x.d,x.m,x.b);pool.classList.add("shown");
-      const g2=$("pwGo");if(g2){g2.disabled=false;g2.textContent=L().poolAgain}syncAdds();try{meow()}catch(e){}
-      try{$("poolPick").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}};
+    /* 1) la ruleta se detiene: se iluminan los dos equipos y el gato maúlla abriendo la boca
+       2) un momento después aparecen abajo el pick, las líneas y las estadísticas */
+    const done=()=>{try{stopSpin();chime()}catch(e){}const x=CANDS[0];
+      W.querySelectorAll('#whPool .cr[data-i="0"]').forEach(e=>e.classList.add("hot"));W.classList.add("wpick");try{meow()}catch(e){}
+      setTimeout(()=>{SPIN=false;
+        saveMine(x.k,x.d,x.m,x.b);$("poolPick").innerHTML=pickCard(x.k,x.d,x.m,x.b)+othersCard(x.k,x.d,x.m,x.b);pool.classList.add("shown");
+        const g2=$("pwGo");if(g2){g2.disabled=false;g2.textContent=L().poolAgain}syncAdds();
+        try{$("poolPick").scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},1800)};
     if(CAT.ok)CAT.spin(4.6,done);else setTimeout(done,1200)}
   const oDrawPool=drawPool;
   drawPool=function(keepPick){stageHome();oDrawPool(keepPick);const box=$("pwBox");
@@ -1454,7 +1458,8 @@ main:not(.m-gato):not(.m-pick)>#list{order:8}
 main.m-pick>#bogModes{order:2}
 main.m-pick>#bogLeagues{order:3}
 main>#bogModes{order:10}
-main>#bogFav{order:11}
+main>#bogFav{order:11;margin:14px 0 16px!important}
+main.revelando>#pick,main.revelando>#combo,main.revelando>#list{display:none!important}
 main>#bogRec{order:12;margin-top:18px}
 main>#estado,main>.legal{order:30}
 main.m-gato>#bogPool{display:flex!important;flex-direction:column}
@@ -1505,6 +1510,14 @@ main>#bogBack{position:static!important}
 .cuota{display:block;white-space:nowrap;margin-top:3px;font-family:var(--f-body,system-ui);font-size:12.5px;color:var(--bog-green-soft);letter-spacing:.2px;text-shadow:none}
 .duo-h .cuota{display:inline;margin:0 0 0 6px;font-size:12px;white-space:nowrap}
 .duo-h span:first-child{min-width:0}
+
+/* iOS: que ningún bloque se encoja y se encime con el siguiente */
+main>*{flex-shrink:0}
+/* el resultado aparece después de que el gato elige (ver script de revelado) */
+main.esperando #pick,main.esperando #combo,main.esperando #list,main.esperando #poolPick,main.esperando #bogPool>.cl{display:none!important}
+.revela{animation:revela .6s ease-out both}
+@keyframes revela{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.revela{animation:none}}
 </style>
 <script>
 (function(){
@@ -1558,5 +1571,24 @@ function tabify(box){
   pc.appendChild(bar);pc.appendChild(wrap)}
 function pase(){["poolPick","pick","list"].forEach(id=>{const el=document.getElementById(id);if(!el)return;humanizar(el);if(id!=="list")tabify(el)})}
 let t=null;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(pase,30)}).observe(document.querySelector("main")||document.body,{childList:true,subtree:true});pase();
+})();
+</script>
+
+<script>
+/* ---- flujo: gira la ruleta → se iluminan los equipos y el gato maúlla → luego aparecen el pick y las líneas ---- */
+(function(){
+const main=document.querySelector("main"),ESPERA=2200,ids=new Set(["pick","poolPick"]);let tm=null,guard=null;
+const orig=Element.prototype.scrollIntoView;
+Element.prototype.scrollIntoView=function(){if(main.classList.contains("esperando")&&ids.has(this.id))return;return orig.apply(this,arguments)};
+function revelar(){clearTimeout(tm);clearTimeout(guard);tm=null;if(!main.classList.contains("esperando"))return;main.classList.remove("esperando");
+  const t=document.getElementById(main.classList.contains("m-gato")?"poolPick":"pick");
+  [t,document.getElementById("combo"),document.getElementById("list"),document.querySelector("#bogPool>.cl")].forEach(e=>{if(e){e.classList.remove("revela");void e.offsetWidth;e.classList.add("revela")}});
+  if(t&&t.innerHTML.trim())try{orig.call(t,{behavior:"smooth",block:"start"})}catch(e){}}
+function empezar(){main.classList.add("esperando");clearTimeout(tm);tm=null;clearTimeout(guard);guard=setTimeout(revelar,12000)}
+document.addEventListener("click",e=>{const st=e.target.closest("#stage,#pwGo");if(!st)return;
+  if(st.id==="stage"&&!main.classList.contains("m-gato")&&st.classList.contains("play"))return;empezar()},true);
+new MutationObserver(()=>{if(!main.classList.contains("esperando")||tm)return;
+  const t=document.getElementById(main.classList.contains("m-gato")?"poolPick":"pick");if(t&&t.innerHTML.trim())tm=setTimeout(revelar,ESPERA)})
+  .observe(main,{childList:true,subtree:true});
 })();
 </script>
