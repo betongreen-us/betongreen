@@ -642,8 +642,8 @@ const CAL_AM={g2:[59,56,62],g1:[49,56,59],m2:[48,53,56],r2:[51,48,44],bt:[62,63,
 /* Europa (La Liga, Premier, Bundesliga 2025-2026); donde había menos de 50 casos se usa el historial de todas las ligas */
 const CAL_EU={g2:[60,59,71],g1:[56,55,59],m2:[50,53,65],r2:[59,47,43],bt:[59,58,62],o25:[58,57,66]};
 const CAL=lg=>(lg==="mls"||lg==="ligamx")?CAL_AM:CAL_EU;
-const TXT={es:{h:"Patrones detectados",s:"Últimos 10 partidos",g2:"marcó en el 2.º tiempo",g1:"marcó en el 1.er tiempo",m2:"marcó 2 goles o más",r2:t=>`A ${t} le marcaron 2 goles o más`,bt:t=>`En los partidos de ${t}, ambos equipos marcaron`,o25:t=>`En los partidos de ${t}, hubo 3 goles o más`,nx:p=>`Después de rachas así, se cumplió <em>${p}%</em> de las veces`,f:"Una racha no es una probabilidad. Úsala como referencia junto con el % del modelo.",none:"No hay rachas fuertes (7 de 10 o más) en este partido.",load:"Buscando patrones…"},
- en:{h:"Patterns detected",s:"Last 10 matches",g2:"scored in the 2nd half",g1:"scored in the 1st half",m2:"scored 2+ goals",r2:t=>`${t} conceded 2+ goals`,bt:t=>`In ${t}'s matches, both teams scored`,o25:t=>`In ${t}'s matches, there were 3+ goals`,nx:p=>`After streaks like this, it hit <em>${p}%</em> of the time`,f:"A streak is not a probability. Use it as a reference next to the model's %.",none:"No strong streaks (7 of 10 or more) in this match.",load:"Looking for patterns…"}};
+const TXT={es:{h:"Patrones detectados",s:"Últimos 10 partidos",g2:"marcó en el 2.º tiempo",g1:"marcó en el 1.er tiempo",m2:"marcó 2 goles o más",r2:t=>`A ${t} le marcaron 2 goles o más`,bt:t=>`En los partidos de ${t}, ambos equipos marcaron`,o25:t=>`En los partidos de ${t}, hubo 3 goles o más`,nx:p=>`Tras rachas así: <em>${p}%</em>`,f:"Una racha no es una probabilidad. Úsala como referencia junto con el % del modelo.",none:"No hay rachas fuertes (7 de 10 o más) en este partido.",load:"Buscando patrones…"},
+ en:{h:"Patterns detected",s:"Last 10 matches",g2:"scored in the 2nd half",g1:"scored in the 1st half",m2:"scored 2+ goals",r2:t=>`${t} conceded 2+ goals`,bt:t=>`In ${t}'s matches, both teams scored`,o25:t=>`In ${t}'s matches, there were 3+ goals`,nx:p=>`After streaks like this: <em>${p}%</em>`,f:"A streak is not a probability. Use it as a reference next to the model's %.",none:"No strong streaks (7 of 10 or more) in this match.",load:"Looking for patterns…"}};
 const T=()=>TXT[(typeof lang!=="undefined"&&lang==="en")?"en":"es"];
 const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const CACHE={};
@@ -666,8 +666,8 @@ async function fill(el){el.dataset.done="1";let lg,a,b;try{[lg,a,b]=JSON.parse(e
         if(k==="bt"||k==="o25"){/* línea del partido: mostrarla una sola vez, con el equipo de la racha más larga */ if(seen[k]&&seen[k].n>=n)return;if(seen[k])items.splice(items.indexOf(seen[k]),1)}
         const it={tm,k,n,d:s[k].slice().reverse()};if(k==="bt"||k==="o25")seen[k]=it;items.push(it)})});
     items.sort((x,y)=>y.n-x.n);const top=items.slice(0,4);
-    el.innerHTML=`<div class="pat-h"><span>🐾 ${t.h}</span><small>${t.s}</small></div>`+(top.length?top.map(x=>`<div class="pat-r"><div class="pat-t"><span>${typeof t[x.k]==="function"?t[x.k](e(x.tm)):`${e(x.tm)} ${t[x.k]}`}</span><b>${x.n}/10</b></div><div class="pat-d">${x.d.map(v=>`<i class="${v?"y":""}"></i>`).join("")}</div><div class="pat-n">${t.nx(CAL(lg)[x.k][Math.min(x.n,9)-7])}</div></div>`).join("")+`<p class="pat-f">${t.f}</p>`:`<div class="pat-e">${t.none}</div>`);
-  }catch(_){el.hidden=true}}
+    el.innerHTML=`<div class="pat-h"><span>🐾 ${t.h}</span><small>${t.s}</small></div>`+(top.length?top.map(x=>`<div class="pat-r"><div class="pat-t"><span>${typeof t[x.k]==="function"?t[x.k](e(x.tm)):`${e(x.tm)} ${t[x.k]}`}</span><b>${x.n}/10</b></div><div class="pat-x"><div class="pat-d">${x.d.map(v=>`<i class="${v?"y":""}"></i>`).join("")}</div><span class="pat-n">${t.nx(CAL(lg)[x.k][Math.min(x.n,9)-7])}</span></div></div>`).join("")+`<p class="pat-f">${t.f}</p>`:`<div class="pat-e">${t.none}</div>`);
+  }catch(_){el.innerHTML=`<div class="pat-h"><span>🐾 ${T().h}</span></div><div class="pat-e">${T().none}</div>`}}
 function scan(){document.querySelectorAll(".pat[data-pat]:not([data-done])").forEach(fill)}
 new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
 })();
@@ -1432,5 +1432,131 @@ main.classList.toggle("dev",LS.g("bog_dev")==="1");
 
 applyView();
 paintStatic();loadHoras();loadRec();ligas();render();showPick();
+})();
+</script>
+
+<style>
+/* ===== Ajustes de diseño v2: ruleta primero, pick con pestañas, menos brillo, más legible ===== */
+/* 1) orden de la pantalla: la ruleta del gato arriba, el récord y los filtros después */
+main{display:flex;flex-direction:column}
+main>*{order:20}
+main>.bog-h,main>#sub{order:0}
+main>#bogBack{order:1;align-self:flex-start}
+main>#hist{order:0}
+main.m-gato>#bogPool{order:2}
+main:not(.m-gato):not(.m-pick)>#ligas{order:2}
+main:not(.m-gato):not(.m-pick)>#chips{order:3}
+main:not(.m-gato):not(.m-pick)>#stage{order:4}
+main:not(.m-gato):not(.m-pick)>.hint{order:5}
+main:not(.m-gato):not(.m-pick)>#pick{order:6}
+main:not(.m-gato):not(.m-pick)>#combo{order:7}
+main:not(.m-gato):not(.m-pick)>#list{order:8}
+main.m-pick>#bogModes{order:2}
+main.m-pick>#bogLeagues{order:3}
+main>#bogModes{order:10}
+main>#bogFav{order:11}
+main>#bogRec{order:12;margin-top:18px}
+main>#estado,main>.legal{order:30}
+main.m-gato>#bogPool{display:flex!important;flex-direction:column}
+main:not(.m-gato)>#bogPool{display:none!important}
+main>#bogBack{position:static!important}
+#bogPool>#pwBox{order:1}
+#bogPool>#pwGo{order:2;margin-top:12px}
+#bogPool>#poolPick{order:3}
+#bogPool>.cl{order:4}
+#bogPool>.pool-lead{order:5;margin-top:18px;font-size:13px;color:var(--bog-mute)}
+#bogPool>.pool-leagues{order:6}
+
+/* 3) menos brillo: solo brillan el pick, la ruleta y los botones principales */
+.card,.why,.duo,.pat,#bogRec .card,.lp-c{border-color:var(--bog-line)!important;box-shadow:none!important}
+.bm.on{box-shadow:none!important}
+.chip.on{box-shadow:none!important}
+#bogBack{box-shadow:none!important}
+.pat-d i.y{box-shadow:none!important}
+
+/* 2) pestañas debajo del pick */
+.ptabs{display:flex;gap:4px;margin:16px 0 0;padding:4px;border-radius:14px;background:rgba(5,10,7,.6);border:1px solid var(--bog-line)}
+.ptabs button{flex:1;min-width:0;padding:9px 4px;border:0;border-radius:10px;background:none;color:var(--bog-mute);font:600 13px/1.1 var(--f-body,system-ui);cursor:pointer;white-space:nowrap}
+.ptabs button.on{background:var(--bog-surface2,#13261b);color:var(--bog-green);box-shadow:inset 0 0 0 1px var(--bog-line-hi)}
+.ptabs button:focus-visible{outline:2px solid var(--bog-green);outline-offset:1px}
+.ppanel>*{margin-top:12px!important}
+.ppanel[hidden]{display:none!important}
+.ppanel .card,.ppanel .why{margin-top:12px}
+
+/* 4) nombres de líneas en lenguaje claro, con el formato de la casa debajo */
+.hl{display:block}
+.row .hl{color:var(--bog-ink,#f1f7f2)!important;font-weight:600}
+.bk{display:block;font-size:11.5px;font-weight:500;color:var(--bog-mute)!important;letter-spacing:.2px;margin-top:2px;font-family:var(--f-body,system-ui);text-transform:none}
+.pc-line .bk{font-size:12px}
+
+/* 5) patrones compactos */
+.pat-r{padding:8px 0}
+.pat-t span{font-size:13.5px;line-height:1.3}
+.pat-t b{font-size:17px}
+.pat-x{display:flex;align-items:center;gap:10px;margin-top:5px}
+.pat-x .pat-d{flex:0 0 96px;margin:0}
+.pat-d i{height:5px}
+.pat-x .pat-n{flex:1;min-width:0;font-size:12px}
+
+/* 6) legibilidad: textos pequeños un poco más grandes y claros */
+:root{--bog-mute:#a3b8aa}
+.pc-pct small,.lgtag,.duo-n,.pat-f,.pat-h small,.btline,.mk,.note,.cl-m small,.cl-n,.legal{font-size:12.5px!important}
+.pc-pct small{letter-spacing:.3px}
+.cuota{display:block;white-space:nowrap;margin-top:3px;font-family:var(--f-body,system-ui);font-size:12.5px;color:var(--bog-green-soft);letter-spacing:.2px;text-shadow:none}
+.duo-h .cuota{display:inline;margin:0 0 0 6px;font-size:12px;white-space:nowrap}
+.duo-h span:first-child{min-width:0}
+</style>
+<script>
+(function(){
+const $q=(s,r=document)=>r.querySelector(s),EN=()=>typeof lang!=="undefined"&&lang==="en";
+/* ---- cuota americana aproximada (cuota justa del modelo, sin margen de la casa) ---- */
+function amer(p){p=Math.min(Math.max(p,0.01),0.99);let v=p>=.5?-(p/(1-p))*100:((1-p)/p)*100;v=Math.round(v/5)*5;return (v>0?"+":"")+v}
+/* ---- nombre claro de cada línea ---- */
+function claro(sel,label){
+  const es=!EN(),c=/rner/i.test(label||""),s=String(sel).trim();let m;
+  const n=(x)=>Math.round(parseFloat(x)+.5); // 1.5 -> 2
+  const T=(h)=>h==="1T"?(es?"1.er tiempo":"1st half"):(es?"2.º tiempo":"2nd half");
+  if(/^(sí|si|yes)$/i.test(s))return es?"Ambos equipos marcan":"Both teams score";
+  if(/^no$/i.test(s))return es?"No marcan los dos":"Not both teams score";
+  if((m=/^(.+?) (1T|2T) over (\d+\.5)$/i.exec(s))){const k=n(m[3]);return k===1?(es?`${m[1]} marca en el ${T(m[2])}`:`${m[1]} scores in the ${T(m[2])}`):(es?`${m[1]} marca ${k}+ en el ${T(m[2])}`:`${m[1]} scores ${k}+ in the ${T(m[2])}`)}
+  if((m=/^(Over|Under) (\d+\.5) (1T|2T)$/i.exec(s))){const over=/over/i.test(m[1]),k=n(m[2]),u=k-1,w=c?(es?"córners":"corners"):(es?"goles":"goals");
+    if(over)return !c&&k===1?(es?`Gol en el ${T(m[3])}`:`Goal in the ${T(m[3])}`):(es?`${k}+ ${w} en el ${T(m[3])}`:`${k}+ ${w} in the ${T(m[3])}`);
+    return u===0?(es?`Sin ${w} en el ${T(m[3])}`:`No ${w} in the ${T(m[3])}`):(es?`${u} ${w} o menos en el ${T(m[3])}`:`${u} or fewer ${w} in the ${T(m[3])}`)}
+  if((m=/^(.+?) over (\d+\.5)$/i.exec(s))){const k=n(m[2]);
+    if(c)return es?`${m[1]}: ${k}+ córners`:`${m[1]}: ${k}+ corners`;
+    return k===1?(es?`${m[1]} marca`:`${m[1]} scores`):(es?`${m[1]} marca ${k} o más`:`${m[1]} scores ${k}+`)}
+  if((m=/^(Over|Under) (\d+\.5)$/i.exec(s))){const over=/over/i.test(m[1]),k=n(m[2]),w=c?(es?"córners":"corners"):(es?"goles":"goals");
+    return over?(es?`${k}+ ${w} en el partido`:`${k}+ ${w} in the match`):(es?`${k-1} ${w} o menos en el partido`:`${k-1} or fewer ${w} in the match`)}
+  return null}
+const casa=()=>EN()?"At the book: ":"En la casa: ",bkH=(tx)=>/^(sí|si|no|yes)$/i.test(tx)?"":`<span class="bk">${casa()}${tx}</span>`;
+function humanizar(root){
+  /* línea principal del pick */
+  root.querySelectorAll(".pc-line:not([data-h])").forEach(el=>{el.dataset.h=1;const lb=$q("small",el),b=$q("b",el);if(!b)return;const h=claro(b.textContent,lb&&lb.textContent);if(h)b.innerHTML=`<span class="hl">${h}</span>${bkH(b.textContent)}`;
+    const pc=el.querySelector(".pc-pct");if(pc&&!pc.querySelector(".cuota")){const p=parseInt(pc.textContent);if(p)pc.insertAdjacentHTML("beforeend",`<span class="cuota">${EN()?"fair odds":"cuota justa"} ≈ ${amer(p/100)}</span>`)}});
+  /* combinadita */
+  root.querySelectorAll(".duo:not([data-h])").forEach(d=>{d.dataset.h=1;const hb=$q(".duo-h b",d);if(hb){const p=parseInt(hb.textContent);if(p)hb.insertAdjacentHTML("afterend",`<span class="cuota">≈ ${amer(p/100)}</span>`)}
+    d.querySelectorAll(".duo-l>span").forEach(sp=>{const lb=$q("small",sp);const tx=[...sp.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join("").trim();const h=claro(tx,lb&&lb.textContent);if(!h)return;
+      [...sp.childNodes].forEach(n=>{if(n.nodeType===3)n.remove()});sp.insertAdjacentHTML("beforeend",`<span class="hl">${h}</span>${bkH(tx)}`)})});
+  /* otras líneas y lista de partidos */
+  root.querySelectorAll(".row>span:first-child:not([data-h])").forEach(sp=>{sp.dataset.h=1;const lb=$q(".mk",sp);const tx=[...sp.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join("").trim();if(!tx)return;const h=claro(tx,lb&&lb.textContent);if(!h)return;
+    [...sp.childNodes].forEach(n=>{if(n.nodeType===3||n.nodeName==="BR")n.remove()});sp.insertAdjacentHTML("beforeend",`<br><span class="hl" style="display:inline">${h}</span>${bkH(tx)}`)});
+}
+/* ---- pestañas debajo del pick ---- */
+function tabify(box){
+  const pc=$q(":scope > .pc",box);if(!pc||pc.dataset.tab)return;pc.dataset.tab=1;
+  const es=!EN(),P=[];
+  const duo=$q(".duo",pc);if(duo)P.push(["duo",es?"Combinadita":"2-line combo",duo]);
+  const pat=$q(".pat",pc);if(pat)P.push(["pat",es?"Patrones":"Patterns",pat]);
+  const otras=[...box.children].filter(e=>e!==pc&&(e.classList.contains("card")||e.classList.contains("why")));
+  if(otras.length)P.push(["otr",$q(":scope > .why",box)&&!$q(":scope > .card",box)?(es?"¿Por qué?":"Why?"):(es?"Otras líneas":"Other lines"),otras]);
+  if(P.length<2)return;
+  const bar=document.createElement("div");bar.className="ptabs";bar.setAttribute("role","tablist");
+  const wrap=document.createElement("div");
+  P.forEach(([k,t,els],i)=>{const b=document.createElement("button");b.type="button";b.textContent=t;b.setAttribute("role","tab");b.dataset.k=k;if(!i)b.classList.add("on");bar.appendChild(b);
+    const pn=document.createElement("div");pn.className="ppanel";pn.dataset.k=k;pn.hidden=i>0;(Array.isArray(els)?els:[els]).forEach(e=>pn.appendChild(e));wrap.appendChild(pn)});
+  bar.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;bar.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));wrap.querySelectorAll(".ppanel").forEach(p=>p.hidden=p.dataset.k!==b.dataset.k)});
+  pc.appendChild(bar);pc.appendChild(wrap)}
+function pase(){["poolPick","pick","list"].forEach(id=>{const el=document.getElementById(id);if(!el)return;humanizar(el);if(id!=="list")tabify(el)})}
+let t=null;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(pase,30)}).observe(document.querySelector("main")||document.body,{childList:true,subtree:true});pase();
 })();
 </script>
