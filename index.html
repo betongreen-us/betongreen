@@ -1584,6 +1584,10 @@ function revelar(){clearTimeout(tm);clearTimeout(guard);tm=null;if(!main.classLi
   const t=document.getElementById(main.classList.contains("m-gato")?"poolPick":"pick");
   [t,document.getElementById("combo"),document.getElementById("list"),document.querySelector("#bogPool>.cl")].forEach(e=>{if(e){e.classList.remove("revela");void e.offsetWidth;e.classList.add("revela")}});
   if(t&&t.innerHTML.trim())try{orig.call(t,{behavior:"smooth",block:"start"})}catch(e){}}
+/* tocar la pantalla mientras el gato maúlla muestra el resultado al instante (sin volver a girar) */
+let saltoHasta=0;
+document.addEventListener("pointerdown",()=>{if(main.classList.contains("esperando")&&tm){saltoHasta=Date.now()+600;revelar()}},true);
+document.addEventListener("click",e=>{if(Date.now()<saltoHasta){saltoHasta=0;e.stopImmediatePropagation();e.preventDefault()}},true);
 function empezar(){main.classList.add("esperando");clearTimeout(tm);tm=null;clearTimeout(guard);guard=setTimeout(revelar,12000)}
 document.addEventListener("click",e=>{const st=e.target.closest("#stage,#pwGo");if(!st)return;
   if(st.id==="stage"&&!main.classList.contains("m-gato")&&st.classList.contains("play"))return;empezar()},true);
