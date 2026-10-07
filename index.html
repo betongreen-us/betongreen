@@ -216,29 +216,44 @@ try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
 function acNew(){
   try{AC=new (window.AudioContext||window.webkitAudioContext)();OUT=AC.createGain();OUT.gain.value=.55;OUT.connect(AC.destination)}catch(e){AC=null;OUT=null}
 }
+let acLast=0;
 function ac(){
   if(!AC||AC.state==="closed")acNew();
   if(AC&&AC.state!=="running"){try{AC.resume()}catch(e){}}
+  acLast=Date.now();
   return AC;
 }
 let acFixing=false;
+/* Cierra el contexto viejo y crea uno nuevo (dentro del toque, así iOS lo deja sonar). */
+function acRebuild(old){
+  try{if(typeof PURR!=="undefined"&&PURR){PURR.stop();PURR=null}}catch(e){}
+  try{spinNodes=[]}catch(e){}
+  try{old.close()}catch(e){}
+  AC=null;OUT=null;acNew();
+  try{if(AC&&AC.state!=="running")AC.resume()}catch(e){}
+  try{if(document.getElementById("intro")&&typeof startPurr==="function")startPurr()}catch(e){}
+}
 function acHeal(){
   if(acFixing)return;
   if(!AC){ac();return}
-  if(AC.state==="running")return;
+  const old=AC,purring=typeof PURR!=="undefined"&&PURR;
+  /* iPhone: tras un rato en silencio (o al empezar a grabar pantalla, una llamada, otra app con audio)
+     iOS puede soltar el audio pero Safari sigue diciendo "running": el icono del altavoz sigue arriba
+     y no suena nada. No se puede detectar, así que tras 15 s sin sonidos se crea un contexto nuevo en el toque. */
+  if(old.state==="running"&&!purring&&!spinNodes.length&&Date.now()-acLast>15000){acLast=Date.now();acRebuild(old);return}
+  if(old.state==="running"){
+    /* reloj congelado = contexto zombi aunque diga "running" */
+    const t=old.currentTime;acFixing=true;
+    setTimeout(()=>{acFixing=false;if(AC===old&&old.state==="running"&&old.currentTime===t)acRebuild(old)},300);
+    return;
+  }
   acFixing=true;
-  const old=AC;
-  let p;try{p=old.resume()}catch(e){}
+  try{old.resume()}catch(e){}
   setTimeout(()=>{
     acFixing=false;
     if(AC!==old||old.state==="running")return;
     /* no revivió: cerrar y crear uno nuevo */
-    try{if(typeof PURR!=="undefined"&&PURR){PURR.stop();PURR=null}}catch(e){}
-    try{spinNodes=[]}catch(e){}
-    try{old.close()}catch(e){}
-    AC=null;OUT=null;acNew();
-    try{if(AC&&AC.state!=="running")AC.resume()}catch(e){}
-    try{if(document.getElementById("intro")&&typeof startPurr==="function")startPurr()}catch(e){}
+    acRebuild(old);
   },350);
 }
 ["pointerdown","touchstart","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,acHeal,{passive:true,capture:true}));
