@@ -171,22 +171,27 @@ const MC={goles_2t:"g2",goles_1t:"g1",corners_equipo:"ce",corners_partido:"cp",b
 function limpiarM(m){const o05=x=>x[0]==="ge"&&/ over 0\.5$/.test(x[1]);const l=m[2].find(x=>o05(x)&&x[1].startsWith(m[0]+" ")),v=m[2].find(x=>o05(x)&&x[1].startsWith(m[1]+" "));
   if(!l||!v)return m;const bt=m[2].find(x=>x[0]==="bt"&&x[1]==="Sí");m[2]=bt?m[2].filter(x=>x!==l&&x!==v):m[2].filter(x=>x!==(l[2]>=v[2]?v:l));return m}
 function limpiarD(dd){Object.values(dd||{}).forEach(arr=>arr.forEach(limpiarM))}
-function procesar(k,pr0,cb0){
-  const pr=pr0.filter(r=>!String(r.partido_id).startsWith("test_")),cb=cb0.filter(r=>!JSON.stringify(r.selecciones).includes("test_"));
+/* partidos que ya empezaron o terminaron se ocultan (se revisa cada minuto) */
+const RAW={};function tIni(h){if(!h)return null;const d=new Date(String(h).replace(" ","T").replace(/([+-]\d\d)$/,"$1:00"));return isNaN(d)?null:d.getTime()}
+function hoyLocal(){return new Date().toLocaleDateString("en-CA")}
+function vigente(r,now,hoy){const t=tIni(r.hora_inicio);return t?t>now:String(r.fecha).slice(0,10)>=hoy}
+function procesar(k,pr0,cb0){RAW[k]=[pr0,cb0];const now=Date.now(),hoy=hoyLocal(),gone=new Set();
+  const pr=pr0.filter(r=>{if(String(r.partido_id).startsWith("test_"))return false;if(vigente(r,now,hoy))return true;gone.add(r.local+"|"+r.visitante);return false}),
+    cb=cb0.filter(r=>!JSON.stringify(r.selecciones).includes("test_")&&!(r.selecciones||[]).some(x=>gone.has(x.local+"|"+x.visitante)));RAW[k].n=pr.length;
   const d={},c={},idx={};
   pr.forEach(r=>{const f=String(r.fecha).slice(5,10);d[f]=d[f]||[];const key=r.partido_id;if(!idx[key]){idx[key]=[r.local,r.visitante,[]];d[f].push(idx[key])}idx[key][2].push([MC[r.mercado]||"ge",r.seleccion,Math.round(r.probabilidad*100),Number(r.cuota_justa)])});
   cb.forEach(r=>{const a=r.selecciones;c[String(r.fecha).slice(5,10)]=[a.map(x=>x.local+" vs "+x.visitante+": "+x.seleccion),Math.round(r.probabilidad_total*100),Number(r.cuota_total),a.map(x=>Math.round(x.probabilidad*100)),null,a.map(x=>MC[x.mercado]||"")]});
   limpiarD(d);
-  if(Object.keys(d).length){LIVE[k]={D:d,C:c};if(liga===k&&!$("stage").classList.contains("play")){swapData(LIVE[k]);clearPick();clearGlow();render()}}}
+  if(Object.keys(d).length||LIVE[k]){LIVE[k]={D:d,C:c};if(liga===k&&!$("stage").classList.contains("play")){swapData(LIVE[k]);clearPick();clearGlow();render()}}}
 async function loadMCP(){marcaEstado("cargando");try{
   const f="(now() at time zone 'America/New_York')::date";
-  const rows=await window.bogSQL(`select json_build_object('p',(select coalesce(json_agg(t order by t.fecha,t.partido_id),'[]'::json) from (select liga,fecha,partido_id,local,visitante,mercado,seleccion,probabilidad,cuota_justa from predicciones where fecha>=${f}) t),'c',(select coalesce(json_agg(t),'[]'::json) from (select liga,fecha,selecciones,probabilidad_total,cuota_total from combinadas where fecha>=${f}) t)) as d`);
+  const rows=await window.bogSQL(`select json_build_object('p',(select coalesce(json_agg(t order by t.fecha,t.partido_id),'[]'::json) from (select liga,fecha,partido_id,local,visitante,hora_inicio,mercado,seleccion,probabilidad,cuota_justa from predicciones where fecha>=${f}) t),'c',(select coalesce(json_agg(t),'[]'::json) from (select liga,fecha,selecciones,probabilidad_total,cuota_total from combinadas where fecha>=${f}) t)) as d`);
   const x=rows[0].d;Object.keys(LN).forEach(k=>procesar(k,x.p.filter(r=>r.liga===LN[k]),x.c.filter(r=>r.liga===LN[k])));marcaEstado("vivo")
 }catch(e){marcaEstado("snap",e&&e.code&&e.code!=="sin_conector"?(e.code==="not_in_manifest"||e.code==="consent_required"?(lang==="en"?"allow Supabase for this page":"permite Supabase para esta página"):e.code==="server_not_connected"||e.code==="needs_reauth"?(lang==="en"?"reconnect Supabase in Settings → Connectors":"reconecta Supabase en Ajustes → Conectores"):e.code):"")}}
 async function loadLiga(k,nombre){try{
-  const hoy=new Date().toISOString().slice(0,10),q=t=>fetch(SB+t,{headers:{apikey:SK,Authorization:"Bearer "+SK}}).then(r=>r.ok?r.json():Promise.reject(r.status));
+  const hoy=hoyLocal(),q=t=>fetch(SB+t,{headers:{apikey:SK,Authorization:"Bearer "+SK}}).then(r=>r.ok?r.json():Promise.reject(r.status));
   const L="liga=eq."+encodeURIComponent(nombre)+"&fecha=gte."+hoy;
-  const [pr0,cb0]=await Promise.all([q("predicciones?"+L+"&select=fecha,partido_id,local,visitante,mercado,seleccion,probabilidad,cuota_justa&order=fecha,partido_id"),q("combinadas?"+L+"&select=fecha,selecciones,probabilidad_total,cuota_total")]);
+  const [pr0,cb0]=await Promise.all([q("predicciones?"+L+"&select=fecha,partido_id,local,visitante,hora_inicio,mercado,seleccion,probabilidad,cuota_justa&order=fecha,partido_id"),q("combinadas?"+L+"&select=fecha,selecciones,probabilidad_total,cuota_total")]);
   procesar(k,pr0,cb0);if(Object.keys(LIVE[k]&&LIVE[k].D||{}).length&&ESTADO!=="vivo")marcaEstado("vivo");
 }catch(e){}}
 function loadPremier(){loadLiga("laliga","La Liga");loadLiga("premier","Premier League");loadLiga("mls","MLS");loadLiga("bundesliga","Bundesliga");loadLiga("ligamx","Liga MX");loadLiga("ligue1","Ligue 1");loadLiga("brasileirao","Brasileirão");loadMCP()}
@@ -1346,6 +1351,8 @@ window.applyLang=applyLang=function(){oApply();paintStatic()};
 /* cuando llegan datos en vivo, refrescar la ruleta de todas las ligas */
 const oProc=procesar;
 window.procesar=procesar=function(){oProc.apply(this,arguments);if(MODE==="liga"&&PICKING)drawPicker();if(MODE==="gato"&&!SPIN&&!($("poolPick")&&$("poolPick").innerHTML))drawPool(false)};
+setInterval(()=>{if(document.hidden||SPIN)return;const now=Date.now(),hoy=hoyLocal();Object.keys(RAW).forEach(k=>{const[p,c]=RAW[k];const n=p.filter(r=>!String(r.partido_id).startsWith("test_")&&vigente(r,now,hoy)).length;if(n!==RAW[k].n)procesar(k,p,c)})},60000);
+let LASTLOAD=Date.now();document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-LASTLOAD>10*60000){LASTLOAD=Date.now();try{loadPremier()}catch(e){}}});
 
 /* ---------- La Liga: misma ruleta dibujada que las demás ligas ---------- */
 const ORDL=["alaves","athletic","atleticomadrid","barcelona","celta","deportivo","elche","espanyol","getafe","levante","malaga","osasuna","racing","rayovallecano","betis","realmadrid","realsociedad","sevilla","valencia","villarreal"];
