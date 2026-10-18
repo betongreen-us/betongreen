@@ -1351,6 +1351,9 @@ window.applyLang=applyLang=function(){oApply();paintStatic()};
 /* cuando llegan datos en vivo, refrescar la ruleta de todas las ligas */
 const oProc=procesar;
 window.procesar=procesar=function(){oProc.apply(this,arguments);if(MODE==="liga"&&PICKING)drawPicker();if(MODE==="gato"&&!SPIN&&!($("poolPick")&&$("poolPick").innerHTML))drawPool(false)};
+function podar(){if(SPIN)return;const now=Date.now();let cambio=false;Object.keys(LIVE).forEach(k=>{if(RAW[k])return;const D0=LIVE[k]&&LIVE[k].D;if(!D0)return;Object.keys(D0).forEach(d=>{const a=D0[d]||[],b=a.filter(m=>{const h=HORA[hKey(k,m[0]+" vs "+m[1])];return !(h&&h.getTime()<=now)});if(b.length!==a.length){cambio=true;if(b.length)D0[d]=b;else delete D0[d]}})});
+  if(cambio&&!$("stage").classList.contains("play")){swapData(LIVE[liga]||(liga==="laliga"?SNAP:{D:{},C:{}}));clearPick();clearGlow();render();if(MODE==="liga"&&PICKING)drawPicker();if(MODE==="gato"&&!SPIN&&!($("poolPick")&&$("poolPick").innerHTML))drawPool(false)}}
+setTimeout(podar,4000);setInterval(podar,60000);
 setInterval(()=>{if(document.hidden||SPIN)return;const now=Date.now(),hoy=hoyLocal();Object.keys(RAW).forEach(k=>{const[p,c]=RAW[k];const n=p.filter(r=>!String(r.partido_id).startsWith("test_")&&vigente(r,now,hoy)).length;if(n!==RAW[k].n)procesar(k,p,c)})},60000);
 let LASTLOAD=Date.now();document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-LASTLOAD>10*60000){LASTLOAD=Date.now();try{loadPremier()}catch(e){}}});
 
